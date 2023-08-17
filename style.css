@@ -1,0 +1,22 @@
+.header-logo {
+  height: 40px;
+}
+
+@media only screen and (max-width: 576px) {
+  .header-logo {
+    height: 25px;
+  }
+}
+
+.copyright-logo {
+  height: 1rem;
+}
+
+button .spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+a.disabled {
+  pointer-events: none;
+}
