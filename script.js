@@ -223,7 +223,7 @@ const resendOtp = (event) => {
 
 const cancelOtp = (event) => {
   event.preventDefault();
-  toggleModal("Are you sure you want to Cancel?", () => handleOtherEvents("CANCEL"));
+  toggleModal("Are you sure you want to cancel?", () => handleOtherEvents("CANCEL"));
 };
 
 const handleOtherEvents = (eventType) => {
