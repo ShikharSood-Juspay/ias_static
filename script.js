@@ -2,11 +2,6 @@ window.onload = () => {
   startTimer();
 };
 
-window.onbeforeunload = (event) => {
-  event.preventDefault();
-  return event.returnValue = '';
-};
-
 let freezeTimer = false;
 const startTime = Date.now() + 300000;
 
