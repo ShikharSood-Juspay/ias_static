@@ -135,7 +135,7 @@ const submitOtp = (event) => {
 
   const otpVal = document.getElementById("otp").value;
   const baseUrl = window.location.origin;
-  const endPoint = "/api/redirect/authAction";
+  const endPoint = "/card-issuance/ampere/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
     otp: otpVal,
@@ -186,7 +186,7 @@ const resendOtp = (event) => {
   toggleOtpTextbox(true, true);
   toggleButtons(true);
   const baseUrl = window.location.origin;
-  const endPoint = "/api/redirect/authAction";
+  const endPoint = "/card-issuance/ampere/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
     "action": "RESEND"
@@ -236,7 +236,7 @@ const handleOtherEvents = (eventType) => {
   toggleButtons(true);
 
   const baseUrl = window.location.origin;
-  const endPoint = "/api/redirect/authAction";
+  const endPoint = "/card-issuance/ampere/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
     "action": eventType
