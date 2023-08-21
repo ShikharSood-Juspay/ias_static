@@ -1,13 +1,23 @@
 window.onload = () => {
-  startTimer(5, 0);
-}
+  startTimer();
+};
+
+window.onbeforeunload = (event) => {
+  event.preventDefault();
+  return event.returnValue = '';
+};
 
 let freezeTimer = false;
+const startTime = Date.now() + 300000;
 
-const startTimer = (minutes, seconds) => {
+const startTimer = () => {
   if (freezeTimer) {
     return;
   }
+  const now = Date.now();
+  const diff = startTime - now;
+  const minutes = Math.max(0, Math.floor(diff / 60000) % 60);
+  const seconds = Math.max(0, Math.floor(diff / 1000) % 60);
   const timer = document.getElementById("otp-timer");
   timer.innerText = numberToText(minutes) + ":" + numberToText(seconds);
   if (minutes || seconds) {
@@ -16,7 +26,8 @@ const startTimer = (minutes, seconds) => {
       startTimer(newMinutes, newSeconds);
     }, 1000);
   } else {
-    document.getElementById("start-button").disabled = true;
+    toggleButtons(true);
+    toggleOtpTextbox(true);
   }
 }
 
@@ -49,6 +60,25 @@ const toggleResendLoader = (enable) => {
   document.getElementById("resendOtp").innerText = !enable ? "Loading..." : "Click here to Resend OTP";
 }
 
+const toggleToast = (message, type) => {
+  const toast = document.getElementById("toast-target");
+  document.getElementById("toast-message").innerText = message;
+  toast.classList.remove("text-bg-danger");
+  toast.classList.remove("text-bg-success");
+  toast.classList.add("text-bg-" + type);
+  new bootstrap.Toast(toast).show();
+};
+
+const toggleModal = (message, onContinue) => {
+  const modal = new bootstrap.Modal(document.getElementById("modal-target"));
+  document.getElementById("modal-message").innerText = message;
+  document.getElementById("modal-confirmation").onclick = () => {
+    modal.hide();
+    onContinue();
+  }
+  modal.show();
+}
+
 const toggleLoader = (btnType, enable) => {
   const id = btnType === "SUBMIT" ? "submit-button" : "cancel-button";
   const text = btnType === "SUBMIT" ? "Submit" : "Cancel";
@@ -62,25 +92,23 @@ const toggleLoader = (btnType, enable) => {
   }
 }
 
-const toggleSuccess = (show = true) => {
-  const otpSuccess = document.getElementById("otpSuccess");
-  otpSuccess.classList.toggle("d-none", !show);
+const toggleSuccess = () => {
+  toggleToast("Success", "success");
 }
 
 const showFailure = () => {
-  const otpFailure = document.getElementById("otpFailure");
-  otpFailure.classList.toggle("d-none", false);
+  toggleToast("Failure", "danger");
 }
 
-const toggleSystemFailure = (enable) => {
-  const systemFailure = document.getElementById("systemError");
-  systemFailure.classList.toggle("d-none", !enable);
+const toggleSystemFailure = () => {
+  toggleToast("Something went wrong", "danger");
 }
 
 function postToUrl(url, reqBody) {
   const form = document.createElement("form");
   form.setAttribute("method", "POST");
   form.setAttribute("action", url);
+  delete reqBody.AccuReturnUrl
 
   for (const key in reqBody) {
     if (reqBody.hasOwnProperty(key)) {
@@ -107,7 +135,7 @@ const submitOtp = (event) => {
 
   const otpVal = document.getElementById("otp").value;
   const baseUrl = window.location.origin;
-  const endPoint = "/card-issuance/ampere/redirect/authAction";
+  const endPoint = "/api/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
     otp: otpVal,
@@ -117,7 +145,7 @@ const submitOtp = (event) => {
     credentials: "same-origin",
     method: "POST",
     headers: {
-      'Content-type':'application/json'
+      'Content-type': 'application/json'
     },
     body: JSON.stringify(reqBody)
   };
@@ -143,16 +171,13 @@ const submitOtp = (event) => {
         });
       }
     }).catch(() => {
-      if(fetchSuccess) {
+      if (fetchSuccess) {
         return;
       }
       toggleSystemFailure(true);
       toggleLoader("SUBMIT", false);
-      setTimeout(() => {
-        toggleSystemFailure(false);
-        toggleButtons(false);
-        toggleOtpTextbox(false);
-      }, 2000);
+      toggleButtons(false);
+      toggleOtpTextbox(false);
     });
 }
 
@@ -161,7 +186,7 @@ const resendOtp = (event) => {
   toggleOtpTextbox(true, true);
   toggleButtons(true);
   const baseUrl = window.location.origin;
-  const endPoint = "/card-issuance/ampere/redirect/authAction";
+  const endPoint = "/api/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
     "action": "RESEND"
@@ -170,7 +195,7 @@ const resendOtp = (event) => {
     credentials: "same-origin",
     method: "POST",
     headers: {
-      'Content-type':'application/json'
+      'Content-type': 'application/json'
     },
     body: JSON.stringify(reqBody)
   };
@@ -191,36 +216,36 @@ const resendOtp = (event) => {
         });
       }
     }).catch(() => {
-      if(fetchSuccess) {
+      if (fetchSuccess) {
         return;
       }
       toggleSystemFailure(true);
       toggleResendLoader(true);
-      setTimeout(() => {
-        toggleSystemFailure(false);
-        toggleButtons(false);
-        toggleOtpTextbox(false, true);
-      }, 2000);
+      toggleButtons(false);
+      toggleOtpTextbox(false, true);
     });
 }
 
 const cancelOtp = (event) => {
   event.preventDefault();
+  toggleModal("Are you sure you want to Cancel?", () => handleOtherEvents("CANCEL"));
+};
+
+const handleOtherEvents = (eventType) => {
   toggleOtpTextbox(true);
   toggleButtons(true);
-  toggleLoader("CANCEL", true);
 
   const baseUrl = window.location.origin;
-  const endPoint = "/card-issuance/ampere/redirect/authAction";
+  const endPoint = "/api/redirect/authAction";
   const url = baseUrl + endPoint;
   const reqBody = {
-    "action": "CANCEL"
+    "action": eventType
   };
   const options = {
     credentials: "same-origin",
     method: "POST",
     headers: {
-      'Content-type':'application/json'
+      'Content-type': 'application/json'
     },
     body: JSON.stringify(reqBody)
   };
@@ -230,21 +255,16 @@ const cancelOtp = (event) => {
     .then(resp => resp.json())
     .then(resp => {
       fetchSuccess = true;
-      toggleLoader("CANCEL", false);
       postToUrl(resp.AccuReturnUrl, {
         ...resp,
         AccuReturnUrl: undefined
       });
     }).catch(() => {
-      if(fetchSuccess) {
+      if (fetchSuccess) {
         return;
       }
       toggleSystemFailure(true);
-      toggleLoader("CANCEL", false);
-      setTimeout(() => {
-        toggleSystemFailure(false);
-        toggleButtons(false);
-        toggleOtpTextbox(false);
-      }, 2000);
+      toggleButtons(false);
+      toggleOtpTextbox(false);
     });
 }
